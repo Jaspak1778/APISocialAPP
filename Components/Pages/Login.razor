@@ -1,0 +1,114 @@
+﻿@page "/"
+@inject HttpClient HttpClient
+@inject NavigationManager NavigationManager
+@inject User User
+
+
+
+
+
+
+
+
+
+<h3>Login</h3>
+
+<div>
+    <label>Username:</label>
+    <input type="text" @bind="username" />
+</div>
+
+<div>
+    <label>Password:</label>
+    <input type="password" @bind="password" />
+</div>
+
+<button @onclick="Logins">Login</button>
+
+<p>@success</p>
+
+@code {
+
+    //Django Rest API Backendille
+    //osoitteet riippuen laitteesta
+    // ipconfig , IPV4 jos ajaa paikallisella laitteella http : / / oma ip :8000/api/endpoint
+    // http ://127.0.0.1:8000/api/  : Windows machine
+    // http ://10.0.2.2:8000/api/        : Emulator
+
+    private string? username;
+    private string? password;
+    private string? success;
+
+    private const string RequestUri = "http://192.168.22.225:8000/api/login/";
+
+    private async Task Logins()
+    {
+        var loginData = new
+
+        {
+            username = username,
+            password = password
+        };
+
+        var json = JsonConvert.SerializeObject(loginData);
+        var response = await HttpClient.PostAsync(RequestUri,
+            new StringContent(json, Encoding.UTF8, "application/json"));
+        if (response.IsSuccessStatusCode)
+
+        {
+            var responseContent = await response.Content.ReadAsStringAsync();
+            var user = JsonConvert.DeserializeObject<User>(responseContent);
+            if (user != null)
+
+            {
+                success = "Kirjauduttu sisään..";
+
+                await FetchUserDetails();
+            }
+            else
+
+            {
+                success = "Kirjautuminen epäonnistui: Käyttäjä ei löytynyt.";
+            }
+
+        }
+        else
+        {
+            success = "Kirjautuminen epäonnistui";
+            Console.WriteLine("Kirjautuminen epäonnistui.");
+        }
+    }
+
+
+    private async Task FetchUserDetails()
+    {
+        var userResponse = await HttpClient.GetAsync($"http://192.168.22.225:8000/api/users/");
+
+        if (userResponse.IsSuccessStatusCode)
+
+        {
+
+            var userContent = await userResponse.Content.ReadAsStringAsync();
+            var userDetailsList = JsonConvert.DeserializeObject<List<User>>(userContent);
+            var userDetails = userDetailsList.FirstOrDefault();
+            if (userDetails != null)
+
+            {
+                User.username = userDetails.username; // Aseta käyttäjänimi
+                User.id= userDetails.id;         // Aseta käyttäjän ID
+                User.IsLoggedIn = true;                // Aseta kirjautumistila
+                Console.WriteLine($"Kirjautunut käyttäjä: {userDetails.username}, Etunimi: {userDetails.first_name}, Sukunimi: {userDetails.last_name}");
+                NavigationManager.NavigateTo("/feed");
+            }
+            else
+            {
+                Console.WriteLine("Käyttäjän tietojen hakeminen epäonnistui: Käyttäjä ei löytynyt.");
+            }
+        }
+        else
+        {
+            Console.WriteLine("Käyttäjän tietojen hakeminen epäonnistui.");
+            NavigationManager.NavigateTo("/feed");
+        }
+    }
+}

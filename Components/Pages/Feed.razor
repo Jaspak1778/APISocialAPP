@@ -1,0 +1,152 @@
+﻿@page "/feed"
+@inject HttpClient Http
+@inject User User
+@inject DeviceInfoService DeviceInfoService
+
+<h2>Syöte</h2>
+
+@if (posts == null || posts.Count == 0)
+{
+    <p>No posts available.</p>
+}
+else
+{
+    @foreach (var post in posts)
+    {
+        <div class="card mb-3">
+            <div class="card-body">
+                <p class="card-text">@post.content</p>
+                <p class="card-text">Julkaissut: @post.author?.username : @post.created</p>
+                <!-- Kommentoi tykkäysten määrä pois, jos ominaisuus ei ole käytössä -->
+                <!-- <p class="card-text">Likes: @post.likes.count</p> -->
+
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <a href="@($"comment_create/{post.id}")" class="btn btn-primary btn-sm">Kommentoi</a>
+                        <a href="@($"like/{post.id}")" class="btn btn-secondary btn-sm">Tykkää</a>
+                    </div>
+
+                    @if (post.author?.id == User.id)
+                    {
+                        <a href="@($"post_delete/{post.id}")" class="btn btn-danger btn-sm">Poista</a>
+                    }
+                </div>
+            </div>
+
+            @if (post.Comments != null && post.Comments.Count > 0)
+            {
+                <div class="card-footer">
+                    <h5>Kommentit</h5>
+                    @foreach (var comment in post.Comments)
+                    {
+                        <div class="card mb-2">
+                            <div class="card-body">
+                                <p class="card-text">@comment.comment_content</p>
+                                <p class="card-text">Julkaissut: @comment.commenter?.username : @comment.created</p>
+
+                                @if (comment.commenter.id == User.id)
+                                {
+                                    <a href="@($"comment_delete/{comment.id}")" class="btn btn-danger btn-sm">Poista</a>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+ 
+    @if (User.IsLoggedIn)
+    {
+        <p>Kirjautuneena</p>
+    }
+    else
+    {   
+        
+        <p>Ei kirjautunut</p>
+    }
+}
+
+
+@code {
+
+    //Django Rest API Backendille
+    //osoitteet riippuen laitteesta
+    // ipconfig , IPV4 jos ajaa paikallisella laitteella http:// oma ip :8000/api/endpoint
+    // http ://127.0.0.1:8000/api/  : Windows machine
+    // http ://10.0.2.2:8000/api/        : Emulator
+
+    private List<Post>? posts;
+    private List<Post>? comments;
+
+    private const string FeedUri = "http://192.168.22.225:8000/api/posts";
+    private const string CommentUri = "http://192.168.22.225:8000/api/comments/";
+
+    protected override async Task OnInitializedAsync()
+        
+    {
+        DeviceInfoService deviceInfoService = new DeviceInfoService();
+
+        try
+        {   
+            posts = await Http.GetFromJsonAsync<List<Post>>(FeedUri);
+            await FetchComments();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error initializing page: {ex.Message}");
+        }
+    }
+
+    private async Task FetchComments()
+    {
+        try
+        {
+            var allComments = await Http.GetFromJsonAsync<List<Comment>>(CommentUri);
+            foreach (var post in posts)
+            {
+                // Suodata kommentit, jotka liittyvät tähän postaukseen, ja lisää ne Comments-listaan
+                post.Comments = allComments.Where(c => c.post.id == post.id).ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching comments: {ex.Message}");
+        }
+    }
+
+
+    public class Post
+    {
+        public int? id { get; set; }
+        public Author? author { get; set; }
+        public string? content { get; set; }
+        public DateTime? created { get; set; }
+        public List<Comment>? Comments { get; set; } = new List<Comment>(); // Lisää tämä rivi
+
+        public class Author
+        {
+            public int? id { get; set; }
+            public string? username { get; set; }
+            public string? first_name { get; set; }
+            public string? last_name { get; set; }
+        }
+    }
+
+    public class Comment
+    {
+        public int? id { get; set; }
+        public Commenter? commenter { get; set; }
+        public Post? post { get; set; }
+        public string? comment_content { get; set; }
+        public DateTime? created { get; set; }
+
+        public class Commenter
+        {
+            public int? id { get; set; }
+            public string? username { get; set; }
+            public string? first_name { get; set; }
+            public string? last_name { get; set; }
+        }
+    }
+}

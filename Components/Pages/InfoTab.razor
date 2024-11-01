@@ -1,0 +1,14 @@
+﻿@page "/info"
+@inject DeviceInfoService DeviceInfoService
+@inject User User
+
+<h3>InfoTab</h3>
+<h4>IP Adress</h4>
+<p>@DeviceInfoService.IPAddress</p>
+<h4>USER INFO:</h4>
+<p>User ID: @User.id</p>
+<p>User Logged : @User.IsLoggedIn</p>
+<p>User Logged : @User.username</p>
+@code {
+
+}
