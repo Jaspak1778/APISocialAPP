@@ -3,6 +3,7 @@
 @inject User User
 @inject DeviceInfoService DeviceInfoService
 
+
 <h2>Syöte</h2>
 
 @if (posts == null || posts.Count == 0)
@@ -79,8 +80,8 @@ else
     private List<Post>? posts;
     private List<Post>? comments;
 
-    private const string FeedUri = "http://192.168.22.225:8000/api/posts";
-    private const string CommentUri = "http://192.168.22.225:8000/api/comments/";
+    private const string FeedUri = "http://127.0.0.1:8000/api/posts";
+    private const string CommentUri = "http://127.0.0.1:8000/api/comments/";
 
     protected override async Task OnInitializedAsync()
         
@@ -115,38 +116,4 @@ else
         }
     }
 
-
-    public class Post
-    {
-        public int? id { get; set; }
-        public Author? author { get; set; }
-        public string? content { get; set; }
-        public DateTime? created { get; set; }
-        public List<Comment>? Comments { get; set; } = new List<Comment>(); // Lisää tämä rivi
-
-        public class Author
-        {
-            public int? id { get; set; }
-            public string? username { get; set; }
-            public string? first_name { get; set; }
-            public string? last_name { get; set; }
-        }
-    }
-
-    public class Comment
-    {
-        public int? id { get; set; }
-        public Commenter? commenter { get; set; }
-        public Post? post { get; set; }
-        public string? comment_content { get; set; }
-        public DateTime? created { get; set; }
-
-        public class Commenter
-        {
-            public int? id { get; set; }
-            public string? username { get; set; }
-            public string? first_name { get; set; }
-            public string? last_name { get; set; }
-        }
-    }
 }

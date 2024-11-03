@@ -39,7 +39,9 @@
     private string? password;
     private string? success;
 
-    private const string RequestUri = "http://192.168.22.225:8000/api/login/";
+    private const string RequestUri = "http://127.0.0.1:8000/api/login/";
+
+
 
     private async Task Logins()
     {
@@ -82,7 +84,10 @@
 
     private async Task FetchUserDetails()
     {
-        var userResponse = await HttpClient.GetAsync($"http://192.168.22.225:8000/api/users/");
+
+        var userResponse = await HttpClient.GetAsync($"http://127.0.0.1:8000/api/users/");
+
+
 
         if (userResponse.IsSuccessStatusCode)
 
