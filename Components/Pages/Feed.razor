@@ -2,10 +2,11 @@
 @inject HttpClient Http
 @inject User User
 @inject DeviceInfoService DeviceInfoService
+@inject CsrfService CsrfService
 
 
 <h2>Syöte</h2>
-
+<Button @onclick="UpdateCommentsAndHideForm">Tetaus</Button>
 @if (posts == null || posts.Count == 0)
 {
     <p>No posts available.</p>
@@ -16,59 +17,75 @@ else
     {
         <div class="card mb-3">
             <div class="card-body">
-                <p class="card-text">@post.content</p>
-                <p class="card-text">Julkaissut: @post.author?.username : @post.created</p>
-                <!-- Kommentoi tykkäysten määrä pois, jos ominaisuus ei ole käytössä -->
-                <!-- <p class="card-text">Likes: @post.likes.count</p> -->
-
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <a href="@($"comment_create/{post.id}")" class="btn btn-primary btn-sm">Kommentoi</a>
-                        <a href="@($"like/{post.id}")" class="btn btn-secondary btn-sm">Tykkää</a>
-                    </div>
-
-                    @if (post.author?.id == User.id)
-                    {
-                        <a href="@($"post_delete/{post.id}")" class="btn btn-danger btn-sm">Poista</a>
-                    }
-                </div>
-            </div>
-
-            @if (post.Comments != null && post.Comments.Count > 0)
-            {
-                <div class="card-footer">
-                    <h5>Kommentit</h5>
-                    @foreach (var comment in post.Comments)
-                    {
-                        <div class="card mb-2">
-                            <div class="card-body">
-                                <p class="card-text">@comment.comment_content</p>
-                                <p class="card-text">Julkaissut: @comment.commenter?.username : @comment.created</p>
-
-                                @if (comment.commenter.id == User.id)
-                                {
-                                    <a href="@($"comment_delete/{comment.id}")" class="btn btn-danger btn-sm">Poista</a>
-                                }
-                            </div>
+                <div class="container">
+                    <div class="row">
+                        <div class="col">
+                            <p class="card-text">@post.author?.username : <span style="color:lightgrey">@GetTimeAgo(post.created)</span></p>
+                            <h4 class="card-text">@post.content</h4>
+                            
                         </div>
-                    }
+                        <div class="col-auto d-flex justify-content-end">
+                                @if (User.IsLoggedIn)
+                                {
+                                    <div class="btn-group-vertical">
+                                    
+                                    <button @onclick="() => ToggleCommentCreate(post.id.Value)" class="btn btn-primary btn-sm">Kommentoi</button>
+                                        <a href="@($"like/{post.id}")" class="btn btn-secondary btn-sm">Tykkää</a>
+
+                                        @if (post.author?.id == User.id)
+                                        {
+                                            <a href="@($"post_delete/{post.id}")" class="btn btn-danger btn-sm">Poista</a>
+                                        }
+                                    </div>
+
+
+                                }
+                        </div>
+                    </div>
                 </div>
-            }
+
+
+                @if (post.Comments != null && post.Comments.Count > 0 || showCommentCreate)
+                {
+
+                    <div class="card-footer">
+
+                    @if (activePostId == post.id)
+                        {
+                            try
+                            {
+                                
+                                <Comment_create PostId="@post.id.Value" OnCommentCreated="@UpdateCommentsAndHideForm" />
+                            
+                             }
+                            catch(Exception ex)
+                            {
+                                System.Diagnostics.Debug.WriteLine(ex.Message);
+                                Console.WriteLine($"Error during comment creation: {ex.Message}");
+                            }
+                        }
+
+                        @foreach (var comment in post.Comments.OrderByDescending(p => p.created))
+                        {
+
+                            <div class="card mb-2">
+                                <div class="card-body">
+                                    <p class="card-text">@comment.commenter?.username kommentoi <span style="color:lightgrey">@GetTimeAgo(comment.created)</span></p>
+                                    <p class="card-text">@comment.comment_content</p>
+                                    
+                                    @if (comment?.commenter?.id == User.id)
+                                    {
+                                        <a @onclick="() => DeleteComment(comment.id.Value)" class="btn btn-danger btn-sm">Poista</a>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
         </div>
     }
- 
-    @if (User.IsLoggedIn)
-    {
-        <p>Kirjautuneena</p>
-    }
-    else
-    {   
-        
-        <p>Ei kirjautunut</p>
-    }
 }
-
-
 @code {
 
     //Django Rest API Backendille
@@ -80,18 +97,52 @@ else
     private List<Post>? posts;
     private List<Post>? comments;
 
+    private string? success;
     private const string FeedUri = "http://127.0.0.1:8000/api/posts";
     private const string CommentUri = "http://127.0.0.1:8000/api/comments/";
 
-    protected override async Task OnInitializedAsync()
-        
-    {
-        DeviceInfoService deviceInfoService = new DeviceInfoService();
+    private bool showCommentCreate = false;
+    private int? activePostId;
 
+    //päivämäärä laskenta
+    private string GetTimeAgo(DateTime? created)
+    {
+        if (!created.HasValue) return "Tuntematon aika"; 
+
+        var timeSpan = DateTime.Now - created.Value; 
+
+        if (timeSpan.TotalDays >= 1)
+        {
+            return $"{(int)timeSpan.TotalDays} päivää sitten";
+        }
+        else if (timeSpan.TotalHours >= 1)
+        {
+            return $"{(int)timeSpan.TotalHours} tuntia sitten";
+        }
+        else if (timeSpan.TotalMinutes >= 1)
+        {
+            return $"{(int)timeSpan.TotalMinutes} minuuttia sitten";
+        }
+        else
+        {
+            return "Vain hetki sitten";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+
+    {   
+        DeviceInfoService deviceInfoService = new DeviceInfoService();
+        await LoadFeed();
+    }
+
+    private async Task LoadFeed()
+    {
         try
         {   
             posts = await Http.GetFromJsonAsync<List<Post>>(FeedUri);
             await FetchComments();
+
         }
         catch (Exception ex)
         {
@@ -115,5 +166,74 @@ else
             Console.WriteLine($"Error fetching comments: {ex.Message}");
         }
     }
+    private async Task DeleteComment(int commentId)
+    {
+        try
+        {
+            // Hakee CSRF-tokenin CsrfServicestä
+            var csrfToken = await CsrfService.GetCsrfTokenAsync();
 
+            // Luo DELETE-pyyntö ja lisää CSRF-token headeriin
+            var request = new HttpRequestMessage(HttpMethod.Delete, $"http://127.0.0.1:8000/api/comments/{commentId}/");     //$ koska osoitteessa muuttuja
+            request.Headers.Add("X-CSRFToken", csrfToken);
+
+            var response = await Http.SendAsync(request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                success = "Kommentti poistettu onnistuneesti!";
+
+                var post = posts?.FirstOrDefault(p => p.Comments.Any(c => c.id == commentId));
+                if (post != null)
+                {
+                    var commentToRemove = post?.Comments?.FirstOrDefault(c => c.id == commentId);
+                    if (commentToRemove != null)
+                    {
+                        post?.Comments?.Remove(commentToRemove);
+                    }
+                }
+            }
+            else
+            {
+                success = "Kommentin poisto epäonnistui. Tarkista API.";
+            }
+        }
+        catch (Exception ex)
+        {
+            success = $"Virhe: {ex.Message}";
+        }
+
+    }
+
+    private void ToggleCommentCreate(int postId)
+    {
+        if (activePostId == postId)
+        {
+
+            showCommentCreate = false;
+            activePostId = null;
+        }
+        else
+        {
+
+            showCommentCreate = true;
+            activePostId = postId;
+
+        }
+
+    }
+
+    private async Task UpdateCommentsAndHideForm()
+    {
+        await FetchComments();  // Päivittää kommentit
+        showCommentCreate = false;  // Piilottaa kommentointikomponentin
+        activePostId = null;    // Tyhjentää aktiivisen postauksen ID:n
+        StateHasChanged();  // Päivittää näkymän
+    }
+
+    //Apuluokka csrf tokenille
+    private class CsrfTokenResponse
+    {
+        public string CsrfToken { get; set; }
+    }
 }

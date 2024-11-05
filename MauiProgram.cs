@@ -20,6 +20,8 @@ namespace APISocialAPP
             builder.Services.AddMauiBlazorWebView();
             builder.Services.AddScoped<User>();
             builder.Services.AddSingleton<DeviceInfoService>();
+            builder.Services.AddScoped<CsrfService>();
+            builder.Services.AddBlazorBootstrap();
 
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();

@@ -1,69 +1,51 @@
 ﻿@page "/newpost"
 @inject HttpClient HttpClient
+@inject CsrfService CsrfService
 
-<h3>Uusi Postaus</h3>
+<style>
+.textarea{
+    outline-width:2px;
+    outline-color:blue;
+    animation:normal;
+    }
+
+</style>
+
+
+<h4>Uusi Postaus</h4>
 
 <div>
-    <label>Postaus:</label>
-    <textarea @bind="postaus"></textarea>
+    <textarea class=textarea placeholder="Julkaise jotain uutta ! " @bind="postaus"></textarea>
 </div>
 
-<button @onclick="NewPost">Lähetä postaus</button>
+<button class="btn btn-primary" @onclick="NewPost">Lähetä postaus</button>
 
 <p>@success</p>
 
 @code {
     private const string RequestUri = "http://127.0.0.1:8000/api/posts/";
     private const string CsrfUri = "http://127.0.0.1:8000/api/csrf/";
-    
-    private string postaus;
-    private string success;
-    private string csrfToken;
 
-    protected override async Task OnInitializedAsync()
-    {
-        await FetchCsrfToken();
-    }
-
-    private async Task FetchCsrfToken()
-    {
-        try
-        {
-            var response = await HttpClient.GetAsync(CsrfUri);
-            if (response.IsSuccessStatusCode)
-            {
-                var json = await response.Content.ReadAsStringAsync();
-                var csrfData = JsonConvert.DeserializeObject<CsrfTokenResponse>(json);
-                csrfToken = csrfData.CsrfToken;
-            }
-            else
-            {
-                success = "CSRF tokenin haku epäonnistui.";
-            }
-        }
-        catch (Exception ex)
-        {
-            success = $"Virhe CSRF tokenin haussa: {ex.Message}";
-        }
-    }
+    private string? postaus;
+    private string? success;
 
     private async Task NewPost()
     {
         try
         {
+            // Hakee CSRF-tokenin CsrfServicestä
+            var csrfToken = await CsrfService.GetCsrfTokenAsync();
+
             var postData = new
-            { 
+            {
                 content = postaus
             };
 
             var json = JsonConvert.SerializeObject(postData);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            // Add CSRF token to the header
+            // Lisätään CSRF token headeriin
             content.Headers.Add("X-CSRFToken", csrfToken);
-            
             var response = await HttpClient.PostAsync(RequestUri, content);
-
             if (response.IsSuccessStatusCode)
             {
                 success = "Postaus lähetetty onnistuneesti!";
@@ -80,8 +62,4 @@
         }
     }
 
-    private class CsrfTokenResponse
-    {
-        public string CsrfToken { get; set; }
-    }
 }

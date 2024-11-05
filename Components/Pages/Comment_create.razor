@@ -1,0 +1,72 @@
+﻿@page "/comment_create/{postId:int}"
+@inject HttpClient HttpClient
+@inject CsrfService CsrfService
+@inject NavigationManager NavigationManager
+
+<p>Jätä kommentti</p>
+
+<div>
+    <textarea @bind="kommentti"></textarea>
+</div>
+
+<Button Color="ButtonColor.Primary" Size="ButtonSize.Small" @onclick="NewComment">Kommentoi</Button>
+
+<p>@success</p>
+
+@code {
+    [Parameter]
+    public int PostId { get; set; }
+    [Parameter]
+    public EventCallback OnCommentCreated { get; set; }
+    private const string RequestUri = "http://127.0.0.1:8000/api/comments/";
+    private const string CsrfUri = "http://127.0.0.1:8000/api/csrf/";
+
+    private string? kommentti;
+    private string? success;
+
+    private async Task NewComment()
+    {
+        try
+        {
+            // Hakee CSRF-tokenin CsrfServicestä
+            var csrfToken = await CsrfService.GetCsrfTokenAsync();
+
+            var CommentData = new
+            {   
+                post = PostId,
+                comment_content = kommentti
+            };
+
+            var json = JsonConvert.SerializeObject(CommentData);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            // Lisätään CSRF token headeriin
+            content.Headers.Add("X-CSRFToken", csrfToken);
+
+            var response = await HttpClient.PostAsync(RequestUri, content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                success = "Kommentti lähetetty onnistuneesti!";
+                kommentti = ""; // Tyhjennetään kenttä onnistuneen lähetyksen jälkeen
+                await OnCommentCreated.InvokeAsync();
+            }
+            else
+            {
+                
+            }
+            {
+                success = "Kommentin lähetys epäonnistui. Tarkista API.";
+            }
+        }
+        catch (Exception ex)
+        {
+            success = $"Virhe: {ex.Message}";
+        }
+    }
+    //Apuluokka csrf tokenille
+    private class CsrfTokenResponse
+    {
+        public string? CsrfToken { get; set; }
+    }
+}
