@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using APISocialAPP.Models;
+using MudBlazor.Services;
 
 
 
@@ -22,6 +23,7 @@ namespace APISocialAPP
             builder.Services.AddSingleton<DeviceInfoService>();
             builder.Services.AddScoped<CsrfService>();
             builder.Services.AddBlazorBootstrap();
+            builder.Services.AddMudServices();
 
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();

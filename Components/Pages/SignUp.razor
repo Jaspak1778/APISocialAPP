@@ -1,0 +1,106 @@
+﻿@page "/signup"
+@inject HttpClient HttpClient
+@inject NavigationManager NavigationManager
+
+
+<div>
+    <h3>Luo tunnukset</h3>
+
+    <EditForm Model="this" OnValidSubmit="SendNewUserData">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+        <div>
+            <label for="user">Anna käyttäjä nimi</label>
+            <InputText type="text" class="box" id="user" @bind-Value="createusername" required />
+        </div>
+        <div>
+            <label for="fname">Etunimesi</label>
+            <InputText type="text" class="box" id="fname" @bind-Value="cfirst_name" />
+        </div>
+        <div>
+            <label for="lname">Sukunimesi</label>
+            <InputText type="text" class="box" id="lname" @bind-Value="clast_name" />
+        </div>
+
+        <div>
+            <label for="mail">Sähköposti</label>
+            <InputText type="email" class="box" id="mail" @bind-Value="cemail" required />
+        </div>
+
+        <div>
+            <label for="passw">Luo salasana</label>
+            <InputText type="password" class="box" id="passw" @bind-Value="cpassword" required />
+        </div>
+
+        <div class="flex-lg-wrap">
+            <button class="custom-button" id="pass" type="submit">
+                Luo tunnukset
+            </button>
+        </div>
+        <br />
+    </EditForm>
+
+    
+</div>
+@code {
+    private string? cfirst_name;
+    private string? clast_name;
+    private string? createusername;
+    private string? cemail;
+    private string? cpassword;
+    private string? success;
+    private bool showSuccess = false;
+    private string? responseMessage;
+
+    private string SignUpUri = "http://127.0.0.1:8000/api/signup/";
+
+
+    private async Task SendNewUserData()
+    {
+
+        var UserData = new
+        {
+            username = createusername,
+            password = cpassword,
+            email = cemail,
+            first_name = !string.IsNullOrEmpty(cfirst_name) ? cfirst_name : "",
+            last_name = !string.IsNullOrEmpty(clast_name) ? clast_name : ""
+
+        };
+
+        try
+        {
+
+            var json = JsonConvert.SerializeObject(UserData);
+            var response = await HttpClient.PostAsync(SignUpUri,
+                new StringContent(json, Encoding.UTF8, "application/json"));
+            if (response.IsSuccessStatusCode)
+            {
+                showSuccess = true;
+                responseMessage = await response.Content.ReadAsStringAsync();
+                success = "Tunnusten luonti onnistui";
+                await Task.Delay(TimeSpan.FromSeconds(5));
+                NavigationManager.NavigateTo("/");
+            }
+            else
+            {
+
+                System.Diagnostics.Debug.WriteLine($"JSON: {json} \n .Response: { response}");
+                responseMessage = $"Virhe: {response.ReasonPhrase}";
+                success = responseMessage;
+
+            }
+
+        }
+        catch (Exception ex)
+        {
+            responseMessage = $"Virhe kutsussa: {ex.Message}";
+        }
+
+    }
+
+
+}
+
+
+

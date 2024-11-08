@@ -12,7 +12,7 @@ namespace APISocialAPP.Models
         public Author? author { get; set; }
         public string? content { get; set; }
         public DateTime? created { get; set; }
-        public List<Comment>? Comments { get; set; } = new List<Comment>(); // Lisää tämä rivi
+        public List<Comment>? Comments { get; set; } = new List<Comment>();
         public class Author
         {
             public int? id { get; set; }

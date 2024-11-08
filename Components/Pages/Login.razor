@@ -5,58 +5,105 @@
 
 
 
+<style>
+    #pass {
+        margin-top: 6px;
+    }
+
+    button {
+        width: 12rem;
+    }
+
+    .custom-button {
+        color: white;
+        background: rgb(63,94,251);
+        background: linear-gradient(90deg, rgba(63,94,251,1) 0%, rgba(252,70,107,1) 100%);
+        border-color: inherit;
+        border-radius: 6px;
+        border-style: none;
+    }
+
+    h1 {
+        font-family: Georgia Bold Italic;
+    }
+
+    .boxelement {
+        border-color: blue;
+        border-radius: 12px;
+        background-color: ghostwhite;
+        max-width: 300px; /* Kaventaa elementin */
+        margin: auto; /* Keskittää elementin */
+        padding: 1rem; /* Lisää pehmustetta */
+    }
+
+    .input-container {
+        position: relative;
+        margin-top: 1.5rem;
+    }
+
+        .input-container label {
+            position: absolute;
+            top: -0.7rem;
+            left: 0.75rem;
+            background-color: ghostwhite;
+            padding: 0 0.3rem;
+            font-size: 0.85rem;
+            color: blue;
+        }
+
+        .input-container input {
+            border: 2px solid blue;
+            border-radius: 12px;
+            padding: 0.6rem;
+            width: 100%;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+</style>
+
 <center>
-<h2>Kirjaudu</h2>
-<h3>Anna kirjautumis tiedot</h3>
-
-
-<div>
-    <br />
-    <EditForm Model="this" OnValidSubmit="Logins">
-        <DataAnnotationsValidator />
-        <ValidationSummary />
-        <div>
-            <InputText name="user" @onmouseover="() => showFail = false" @bind-Value="username" placeholder="Käyttäjänimi" required />
-        </div>
+    <div class="container-fluid boxelement">
+        <h1>Kirjaudu</h1>
         <br />
-        <div>
-            <InputText name="pass" @bind-Value="password" placeholder="Salasanasi"  required />
-        </div>
-        <div class="flex-lg-wrap">
-            <button type="submit">
-                Kirjaudu
-            </button>
-        </div>
+        <EditForm Model="this" OnValidSubmit="Logins">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="input-container">
+                <label for="user">Käyttäjänimi</label>
+                <InputText id="user" class="box" @bind-Value="username" @onmouseover="() => showFail = false" placeholder=" " required />
+            </div>
+            <div class="input-container">
+                <label for="pass">Salasanasi</label>
+                <InputText id="pass" type="password" @bind-Value="password" placeholder=" " required />
+            </div>
+            <div class="flex-lg-wrap">
+                <button class="custom-button" id="pass" type="submit">
+                    Kirjaudu
+                </button>
+            </div>
+        </EditForm>
         <br />
-
-    </EditForm>
-    <br />
-    <div>
-        @if (showSuccess)
-        {
-            <div>
-                <Alert Color="AlertColor.Success">@success</Alert>
-            </div>
-        }
-        @if (showFail)
-        {
-            <div>
-                <Alert Color="AlertColor.Danger">@success</Alert>
-            </div>
-
-        }
-
+        <div id="pass">
+            <a style="color:dodgerblue; width:auto" class="btn btn-link" href="signup">Uusi käyttäjä? Luo tunnukset</a>
+        </div>
     </div>
 
-</div>
+    <br />
+    <div>
+        @if (showFail)
+        {
+            <div><Alert Color="AlertColor.Danger">@success</Alert></div>
+        }
+    </div>
 </center>
+
 @code {
 
 
     //Django Rest API Backendille
     //osoitteet riippuen laitteesta
     // ipconfig , IPV4 jos ajaa paikallisella laitteella http : / / oma ip :8000/api/endpoint
-    // http ://127.0.0.1:8000/api/  : Windows machine
+    // http ://192.168.180.225:8000/api/  : Windows machine
     // http ://10.0.2.2:8000/api/        : Emulator
 
     private string? username;
@@ -64,6 +111,7 @@
     private string? success;
     private bool showSuccess = false;
     private bool showFail = false;
+
     //LOGIN URI
 
     private const string RequestUri = "http://127.0.0.1:8000/api/login/";
@@ -71,6 +119,8 @@
     //USERS URI
 
     private const string UsersUri = "http://127.0.0.1:8000/api/users/";                     
+
+
 
 
     private async Task Logins()
@@ -93,10 +143,13 @@
             var user = JsonConvert.DeserializeObject<User>(responseContent);
             if (user != null)
 
-            {
+            {   
+
                 showSuccess = true;
                 success = "Kirjauduttu sisään..";
+                User.ShowAlert = true;
                 await FetchUserDetails();
+
             }
             else
 
@@ -129,6 +182,7 @@
                 User.username = userDetails.username; // Aseta käyttäjänimi
                 User.id= userDetails.id;         // Aseta käyttäjän ID
                 User.IsLoggedIn = true;                // Aseta kirjautumistila
+                
                 Console.WriteLine($"Kirjautunut käyttäjä: {userDetails.username}, Etunimi: {userDetails.first_name}, Sukunimi: {userDetails.last_name}");
                 NavigationManager.NavigateTo("/feed");
             }
@@ -142,5 +196,6 @@
             Console.WriteLine("Käyttäjän tietojen hakeminen epäonnistui.");
             NavigationManager.NavigateTo("/feed");
         }
+   
     }
 }

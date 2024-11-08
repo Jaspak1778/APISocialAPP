@@ -3,19 +3,29 @@
 @inject CsrfService CsrfService
 @inject NavigationManager NavigationManager
 
+<style>
+    input{
+        height:auto;
+    }
+</style>
+
 <p>Jätä kommentti</p>
 
-<div>
-    <textarea @bind="kommentti"></textarea>
+<div class="row">
+    <div class="col">
+        <form>
+            <input @bind="kommentti"></input>
+            <Button Color="ButtonColor.Primary" Size="ButtonSize.Medium" @onclick="NewComment">OK</Button>
+        </form>
+    </div>
 </div>
-
-<Button Color="ButtonColor.Primary" Size="ButtonSize.Small" @onclick="NewComment">Kommentoi</Button>
-
 <p>@success</p>
 
 @code {
+
     [Parameter]
     public int PostId { get; set; }
+
     [Parameter]
     public EventCallback OnCommentCreated { get; set; }
     private const string RequestUri = "http://127.0.0.1:8000/api/comments/";
@@ -23,6 +33,7 @@
 
     private string? kommentti;
     private string? success;
+
 
     private async Task NewComment()
     {
