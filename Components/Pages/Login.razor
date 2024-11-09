@@ -9,6 +9,9 @@
     #pass {
         margin-top: 6px;
     }
+    .test {
+        font-size:200px;
+    }
 
     button {
         width: 12rem;
@@ -70,11 +73,11 @@
             <ValidationSummary />
             <div class="input-container">
                 <label for="user">Käyttäjänimi</label>
-                <InputText id="user" class="box" @bind-Value="username" @onmouseover="() => showFail = false" placeholder=" " required />
+                <InputText id="user" class="box" @bind-Value="username" @onmouseover="() => showFail = false"  required />
             </div>
             <div class="input-container">
                 <label for="pass">Salasanasi</label>
-                <InputText id="pass" type="password" @bind-Value="password" placeholder=" " required />
+                <InputText id="pass" type="password" @bind-Value="password" required />
             </div>
             <div class="flex-lg-wrap">
                 <button class="custom-button" id="pass" type="submit">
@@ -114,11 +117,11 @@
 
     //LOGIN URI
 
-    private const string RequestUri = "http://127.0.0.1:8000/api/login/";
+    private const string RequestUri = "http://192.168.238.225:8000/api/login/";
 
     //USERS URI
 
-    private const string UsersUri = "http://127.0.0.1:8000/api/users/";                     
+    private const string UsersUri = "http://192.168.238.225:8000/api/users/";                     
 
 
 
@@ -134,11 +137,14 @@
         };
 
         var json = JsonConvert.SerializeObject(loginData);
-        var response = await HttpClient.PostAsync(RequestUri,
-            new StringContent(json, Encoding.UTF8, "application/json"));
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        // Yllä on logindata joka on muutettu JSON muotoon ja joka lisätään bodyyn
+
+        var response = await HttpClient.PostAsync(RequestUri, content);
         if (response.IsSuccessStatusCode)
 
         {
+            var message = response.Content;
             var responseContent = await response.Content.ReadAsStringAsync();
             var user = JsonConvert.DeserializeObject<User>(responseContent);
             if (user != null)
@@ -169,7 +175,7 @@
     private async Task FetchUserDetails()
     {
 
-        var userResponse = await HttpClient.GetAsync("http://127.0.0.1:8000/api/users/");
+        var userResponse = await HttpClient.GetAsync("http://192.168.238.225:8000/api/users/");
 
         if (userResponse.IsSuccessStatusCode)
         {

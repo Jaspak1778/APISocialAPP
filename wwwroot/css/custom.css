@@ -1,0 +1,27 @@
+﻿/*Omatekoinen alert*/
+.alert {
+    position: fixed;
+    top: -100px; /* Asetetaan elementti aluksi näkymättömäksi yläreunan yläpuolelle */
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #ffcc00;
+    color: black;
+    padding: 15px;
+    border-radius: 5px;
+    font-size: 16px;
+    font-family: 'Segoe UI';
+    opacity: 0;
+    animation: drop 1s forwards;
+}
+
+@keyframes drop {
+    0% {
+        top: 30px; /* Alkaa yläreunasta */
+        opacity: 0;
+    }
+
+    100% {
+        top: 50px; /* Päätyy näkyviin */
+        opacity: 1;
+    }
+}

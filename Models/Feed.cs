@@ -13,6 +13,7 @@ namespace APISocialAPP.Models
         public string? content { get; set; }
         public DateTime? created { get; set; }
         public List<Comment>? Comments { get; set; } = new List<Comment>();
+        public List<Like>? Likes { get; set; } = new List<Like>();
         public class Author
         {
             public int? id { get; set; }
@@ -35,6 +36,21 @@ namespace APISocialAPP.Models
             public string? username { get; set; }
             public string? first_name { get; set; }
             public string? last_name { get; set; }
+        }
+    }
+    public class Like
+    {
+        public int? id { get; set; }
+        public Liker? liker { get; set; }
+        public Post? post { get; set; }
+
+        public class Liker
+        {
+            public int? id { get; set; }
+            public string? username { get; set; }
+            public string? first_name { get; set; }
+            public string? last_name { get; }
+
         }
     }
 }

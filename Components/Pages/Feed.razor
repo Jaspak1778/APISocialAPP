@@ -5,28 +5,42 @@
 @inject DeviceInfoService DeviceInfoService
 @inject CsrfService CsrfService
 
+
+<style>
+    .margin {
+        margin-left: 2rem;
+    }
+    svg{
+        outline-color:red;
+    }
+
+    .hovered{
+        width:20px;
+        height:20px;
+        transition: transform 0.3s ease; /* Pehmeä animaatio skaalaamiselle */
+    }
+    .hovered:hover {
+            
+            transform: scale(1.7); /* Skaalaa 1.5x ilman asettelumuutosta */
+        
+}
+
+</style>
+
+<center>
+<h2>Feedi</h2>
+</center>
 <div>
 @if (User.ShowAlert)
 {
     <div class="alert alert-success">Sisään kirjautuminen Onnistui</div>
 }
-else
-{
-       
-}
 </div>
-<style>
-    .margin {
-        margin-left: 6px;
-    }
-
-</style>
-
-<h2>Syöte</h2>
 
 @if (posts == null || posts.Count == 0)
 {
-    <p>No posts available.</p>
+        <img style="object-fit: fill" src="https://www.icegif.com/wp-content/uploads/2023/07/icegif-1260.gif" />
+    
 }
 else
 {
@@ -50,21 +64,21 @@ else
                             </div>
 
                             @* Buttonit *@
-                            <div class="row">
+                            <div style="height: 50px;" class="row">
                                 <div class="col">
-                                <div class="col-auto d-flex justify-content-end">
+                                    <div class=" col-auto d-flex justify-content-end">
                                         @if (User.IsLoggedIn)
                                         {
-                                            <div>
-                                    
-                                            <button @onclick="() => ToggleCommentCreate(post.id.Value)" class="btn btn-primary btn-sm">Kommentoi</button>
-                                                <button href="@($"like/{post.id}")" class="btn btn-secondary btn-sm">Tykkää</button>
+                                            <div style="margin-bottom:2rem;">
+
+                                                <a @onclick="() => ToggleCommentCreate(post.id.Value)" ><img class="hovered" src="Icons/chat-dots.svg" /></a>
+                                                <a class="margin" @onclick="() => AddLike(post.id.Value)">@post.Likes?.Count<img class="hovered" src="Icons/heart.svg" /></a>
 
                                                 @* Julkaisun poisto *@
 
                                                 @if (post.author?.id == User.id)
                                                 {
-                                                <button @onclick="() => DeletePost(post.id.Value)" class="btn btn-danger btn-sm margin">Poista</button>
+                                                    <a class="margin" @onclick="() => DeletePost(post.id.Value)"><img class="hovered" src="Icons/x-circle-fill.svg" /></a>
                                                 }
                                             </div>
 
@@ -72,8 +86,9 @@ else
                                         }
                                 </div>
                             </div>
-                            </div>
+                            </div >
                             @* Buttonit *@
+
                         </div>
                     </div>
 
@@ -119,7 +134,7 @@ else
                                             <div class="row">
                                                 <div class="col">
                                                     <div class="col-auto d-flex justify-content-end">
-                                                        <button @onclick="() => DeleteComment(comment.id.Value)" class="btn btn-danger btn-sm">Poista</button>
+                                                        <a @onclick="() => DeleteComment(comment.id.Value)"><img class="hovered" src="Icons/x-circle-fill.svg" /></a>
                                                     </div>
                                                 </div>
                                             </div>
@@ -132,7 +147,9 @@ else
                 </div>
             </div>
         }
+        
         <div style="height: 400px;"></div>
+            
   </div>
 }
 
@@ -146,10 +163,12 @@ else
 
     private List<Post>? posts;
     private List<Post>? comments;
+    private List<Post>? likes;
 
     private string? success;
-    private const string FeedUri = "http://127.0.0.1:8000/api/posts";
-    private const string CommentUri = "http://127.0.0.1:8000/api/comments/";
+    private const string FeedUri = "http://192.168.238.225:8000/api/posts";
+    private const string CommentUri = "http://192.168.238.225:8000/api/comments/";
+    private const string LikesUri = "http://192.168.238.225:8000/api/likes/";
     // Kommentit
     private bool showCommentCreate = false;
     private int? activePostId;
@@ -183,31 +202,19 @@ else
             return "Vain hetki sitten";
         }
     }
-    
 
-    
+
+
     protected override async Task OnInitializedAsync()
 
-    {   
-        // Omatekoinen alert
-        // Kutsutaan luokan kautta päivittämällä alert bool
-
-        await Task.Delay(3000); // Odota 3 sekuntia
-
-        User.ShowAlert = false; // Piilota alert
-        StateHasChanged(); // Päivitä näkymä
-
-        // Laiteinfo tarvittaessa
-        DeviceInfoService deviceInfoService = new DeviceInfoService();
-        await LoadFeed();
-    }
-
-    private async Task LoadFeed()
     {
         try
         {   
             posts = await Http.GetFromJsonAsync<List<Post>>(FeedUri);
+
             await FetchComments();
+            await FetchLikes();
+            await Alert();
 
         }
         catch (Exception ex)
@@ -217,10 +224,11 @@ else
     }
     // API kutsu kommentteille
     private async Task FetchComments()
-    {   
+    {
 
         try
-        {
+        {   
+
             var allComments = await Http.GetFromJsonAsync<List<Comment>>(CommentUri);
             foreach (var post in posts)
             {
@@ -244,7 +252,7 @@ else
             var csrfToken = await CsrfService.GetCsrfTokenAsync();
 
             // Luo DELETE-pyyntö ja lisää CSRF-token headeriin
-            var request = new HttpRequestMessage(HttpMethod.Delete, $"http://127.0.0.1:8000/api/posts/{postId}/");     //$ koska osoitteessa muuttuja
+            var request = new HttpRequestMessage(HttpMethod.Delete, $"http://192.168.238.225:8000/api/posts/{postId}/");     //$ koska osoitteessa muuttuja
             request.Headers.Add("X-CSRFToken", csrfToken);
 
             var response = await Http.SendAsync(request);
@@ -280,7 +288,7 @@ else
             var csrfToken = await CsrfService.GetCsrfTokenAsync();
 
             // Luo DELETE-pyyntö ja lisää CSRF-token headeriin
-            var request = new HttpRequestMessage(HttpMethod.Delete, $"http://127.0.0.1:8000/api/comments/{commentId}/");     //$ koska osoitteessa muuttuja
+            var request = new HttpRequestMessage(HttpMethod.Delete, $"http://192.168.238.225:8000/api/comments/{commentId}/");     //$ koska osoitteessa muuttuja
             request.Headers.Add("X-CSRFToken", csrfToken);
 
             var response = await Http.SendAsync(request);
@@ -327,6 +335,58 @@ else
         }
 
     }
+    private async Task FetchLikes()
+    {
+
+        try
+        {
+
+            var allLikes = await Http.GetFromJsonAsync<List<Like>>(LikesUri);
+            foreach (var post in posts)
+            {
+                // Suodata kommentit, jotka liittyvät tähän postaukseen, ja lisää ne Comments-listaan
+                post.Likes = allLikes.Where(c => c.post.id == post.id).ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching comments: {ex.Message}");
+        }
+    }
+
+    private async Task AddLike(int id)
+    {
+        try
+        {
+            // Hakee CSRF-tokenin CsrfServicestä
+            var csrfToken = await CsrfService.GetCsrfTokenAsync();
+
+            var LikeData = new
+            {
+                post = id
+            };
+
+            var json = JsonConvert.SerializeObject(LikeData);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            // Lisätään CSRF token headeriin
+            content.Headers.Add("X-CSRFToken", csrfToken);
+            var response = await Http.PostAsync(LikesUri, content);
+            if (response.IsSuccessStatusCode)
+            {
+                success = "Tykkäys lähetetty onnistuneesti!";
+            }
+            else
+            {
+                success = "Tykkäys epäonnistui. Tarkista API.";
+            }
+        }
+        catch (Exception ex)
+        {
+            success = $"Virhe: {ex.Message}";
+        }
+        
+    }
+
 
     private async Task UpdateCommentsAndHideForm()
     {
@@ -334,6 +394,20 @@ else
         showCommentCreate = false;  // Piilottaa kommentointikomponentin
         activePostId = null;    // Tyhjentää aktiivisen postauksen ID:n
         StateHasChanged();  // Päivittää näkymän
+    }
+
+    private async Task Alert()
+    {
+        // Omatekoinen alert
+        // Kutsutaan luokan kautta päivittämällä alert bool
+
+        await Task.Delay(3000); // Odota 3 sekuntia
+
+        User.ShowAlert = false; // Piilota alert
+        StateHasChanged(); // Päivitä näkymä
+
+        // Laiteinfo tarvittaessa
+        DeviceInfoService deviceInfoService = new DeviceInfoService();
     }
 
     //Apuluokka csrf tokenille

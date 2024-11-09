@@ -52,7 +52,7 @@
     private bool showSuccess = false;
     private string? responseMessage;
 
-    private string SignUpUri = "http://127.0.0.1:8000/api/signup/";
+    private string SignUpUri = "http://192.168.238.225:8000/api/signup/";
 
 
     private async Task SendNewUserData()
@@ -70,10 +70,11 @@
 
         try
         {
-
+            //olioluonti
             var json = JsonConvert.SerializeObject(UserData);
-            var response = await HttpClient.PostAsync(SignUpUri,
-                new StringContent(json, Encoding.UTF8, "application/json"));
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var response = await HttpClient.PostAsync(SignUpUri, content);
+
             if (response.IsSuccessStatusCode)
             {
                 showSuccess = true;

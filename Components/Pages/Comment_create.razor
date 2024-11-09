@@ -7,6 +7,16 @@
     input{
         height:auto;
     }
+
+    .hovered {
+        margin-left:1rem;
+        width: 20px;
+        height: 20px;
+        transition: transform 0.3s ease; /* Pehmeä animaatio skaalaamiselle */
+    }
+
+        .hovered:hover {
+            transform: scale(1.7); /* Skaalaa 1.5x ilman asettelumuutosta */
 </style>
 
 <p>Jätä kommentti</p>
@@ -15,7 +25,7 @@
     <div class="col">
         <form>
             <input @bind="kommentti"></input>
-            <Button Color="ButtonColor.Primary" Size="ButtonSize.Medium" @onclick="NewComment">OK</Button>
+            <a @onclick="NewComment"><img class="hovered" src="Icons/check2-square.svg" /></a>
         </form>
     </div>
 </div>
@@ -28,8 +38,8 @@
 
     [Parameter]
     public EventCallback OnCommentCreated { get; set; }
-    private const string RequestUri = "http://127.0.0.1:8000/api/comments/";
-    private const string CsrfUri = "http://127.0.0.1:8000/api/csrf/";
+    private const string RequestUri = "http://192.168.238.225:8000/api/comments/";
+    // private const string CsrfUri = "http://192.168.238.225:8000/api/csrf/";
 
     private string? kommentti;
     private string? success;
@@ -53,7 +63,6 @@
 
             // Lisätään CSRF token headeriin
             content.Headers.Add("X-CSRFToken", csrfToken);
-
             var response = await HttpClient.PostAsync(RequestUri, content);
 
             if (response.IsSuccessStatusCode)
@@ -63,9 +72,6 @@
                 await OnCommentCreated.InvokeAsync();
             }
             else
-            {
-                
-            }
             {
                 success = "Kommentin lähetys epäonnistui. Tarkista API.";
             }

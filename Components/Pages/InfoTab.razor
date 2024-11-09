@@ -1,7 +1,9 @@
 ﻿@page "/info"
 @inject DeviceInfoService DeviceInfoService
 @inject User User
-
+@inject HttpClient HttpClient
+@inject NavigationManager NavigationManager
+@inject CsrfService CsrfService
 
 <h3>InfoTab</h3>
 <h4>IP Adress</h4>
@@ -11,38 +13,45 @@
 <p>User Logged : @User.IsLoggedIn</p>
 <p>User Logged : @User.username</p>
 
-<Alert Color="@alertColor" Dismissable="false">
-    <Icon Name="@alertIconName" class="me-2"></Icon>@alertMessage 
-</Alert>
-
-<Button Color="ButtonColor.Success" @onclick="ShowSuccessAlert"> Success Alert </Button>
-<Button Color="ButtonColor.Danger" @onclick="ShowDangerAlert"> Danger Alert </Button>
-<Button Color="ButtonColor.Info" @onclick="ShowInfoAlert"> Info Alert </Button>
+<Button Color="ButtonColor.Danger" @onclick="LogOut"> Kirjaudu ulos </Button>
 
 @code {
-    // alertin tila
-    AlertColor alertColor = AlertColor.Primary;
-    IconName alertIconName = IconName.CheckCircleFill;
-    string alertMessage = "A simple alert - check it out!";
 
-    private void ShowSuccessAlert()
+    private const string RequestUri = "http://192.168.238.225:8000/api/logout/";
+    private string? Message;
+  
+    private async Task LogOut()
     {
-        alertColor = AlertColor.Success;
-        alertIconName = IconName.CheckCircleFill;
-        alertMessage = "A simple success alert - check it out!";
+        // Hakee CSRF-tokenin CsrfServicestä
+        var csrfToken = await CsrfService.GetCsrfTokenAsync();
+
+        var json = JsonConvert.SerializeObject("");
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        // Lisätään CSRF token headeriin
+        content.Headers.Add("X-CSRFToken", csrfToken);
+
+        var response = await HttpClient.PostAsync(RequestUri, content);
+
+        if (response.IsSuccessStatusCode)
+        {
+            // Varmistetaan, että CSRF-token päivittyy ennen seuraavaa API-pyyntöä
+            await RefreshCsrfToken();
+
+            // Lataa sovellus uudelleen
+            NavigationManager.NavigateTo("/", forceLoad: true);
+        }
+        else
+        {
+            Console.WriteLine("Pyyntö epäonnistui.");
+        }
     }
 
-    private void ShowDangerAlert()
+    private async Task RefreshCsrfToken()
     {
-        alertColor = AlertColor.Danger;
-        alertIconName = IconName.ExclamationTriangleFill;
-        alertMessage = "A simple danger alert - check it out!";
-    }
-
-    private void ShowInfoAlert()
-    {
-        alertColor = AlertColor.Info;
-        alertIconName = IconName.ExclamationCircleFill;
-        alertMessage = "A simple info alert - check it out!";
+        //Varmistetaan että CSRF on poistettu ja uudistettu jotta sessio päättyy varmemmin
+        var csrfToken = await CsrfService.GetCsrfTokenAsync();
+        HttpClient.DefaultRequestHeaders.Remove("X-CSRFToken"); // poista vanha token
+        HttpClient.DefaultRequestHeaders.Add("X-CSRFToken", csrfToken); // Lisää uusi token
     }
 }

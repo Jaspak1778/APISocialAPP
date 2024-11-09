@@ -10,7 +10,7 @@ namespace APISocialAPP.Models
         private readonly HttpClient _httpClient;
         private string _csrfToken;
 
-        private const string CsrfUri = "http://127.0.0.1:8000/api/csrf/";
+        private const string CsrfUri = "http://192.168.238.225:8000/api/csrf/";
 
         public CsrfService(HttpClient httpClient)
         {
